@@ -35,24 +35,31 @@ namespace Ags.ResourceProxy.Core {
 		public async Task Invoke(HttpContext context) {
 			var endRequest = false;
 
-			if (context.Request.QueryString.HasValue && context.Request.QueryString.ToString().ToLower() == "?ping") {
-				await context.Response.WriteAsync(CreatePingResponse());
-				return;
-			}
+            if (context.Request.QueryString.HasValue && context.Request.QueryString.ToString().ToLower() == "?ping")
+            {
+                await context.Response.WriteAsync(CreatePingResponse());
+                return;
+            }
 
-			// Note: Referrer is mis-spelled in the HTTP Spec
-			_proxyReferrer = context?.Request?.Headers["referer"];
+
+            // Note: Referrer is mis-spelled in the HTTP Spec
+            _proxyReferrer = context?.Request?.Headers["referer"];
 			if (_proxyConfigService.IsAllowedReferrer(_proxyReferrer) == false) {
 				CreateErrorResponse(context.Response, $"Referrer {_proxyReferrer} is not allowed.", HttpStatusCode.BadRequest);
 				return;
 			}
-			// Allows request body to be read multiple times, and buffers.
-			context.Request.EnableBuffering();
 
-			var proxiedUrl = context.Request.QueryString.ToString().TrimStart('?');
+            // Allows request body to be read multiple times, and buffers.
+            context.Request.EnableBuffering();
+            var proxiedUrl = context.Request.QueryString.ToString().TrimStart('?');
 
-			// Check if proxy URL is in the list of configured URLs.
-			var serverUrlConfig = _proxyConfigService.GetProxyServerUrlConfig(proxiedUrl);
+            if (_proxyConfigService.IsAllowedReferrer(_proxyReferrer) == true)
+            {
+                proxiedUrl += $"referer={_proxyReferrer}";
+            }
+
+            // Check if proxy URL is in the list of configured URLs.
+            var serverUrlConfig = _proxyConfigService.GetProxyServerUrlConfig(proxiedUrl);
 
 			HttpResponseMessage response = null;
 
